@@ -1,0 +1,3 @@
+<launch>
+	<node name="lab3_package_node" pkg="lab3_package" type="lab3_package_node"/>
+</launch>
