@@ -6,9 +6,8 @@
 #include "osrf_gear/Order.h"
 #include "osrf_gear/GetMaterialLocations.h"
 #include "osrf_gear/LogicalCameraImage.h"
-// MoveIt header files
-#include <moveit/move_group_interface/move_group_interface.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
+// Include a file from the ur_kinematics package
+#include "ur_kinematics/ur_kin.h"
 // Transformation header files
 #include "tf2_ros/transform_listener.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
@@ -16,10 +15,15 @@
 
 std::vector<osrf_gear::Order> order_vector;
 osrf_gear::LogicalCameraImage image_from_cam;
+osrf_gear::JointStates joint_receieved;
 
 void order_callback(const osrf_gear::Order::ConstPtr & order_msg) {
     ROS_INFO_STREAM("Received order:\n" << *order_msg);
    order_vector.push_back(*order_msg);
+  }
+
+void joint_callback(const osrf_gear::JointState::ConstPtr & joint_msg) {
+   joint_receieved = *joint_msg;
   }
 
 void cam_callback(const osrf_gear::LogicalCameraImage::ConstPtr& cam_msg) {
@@ -33,6 +37,7 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   ros::Subscriber orders_subscriber = n.subscribe("/ariac/orders", 10,order_callback);
   ros::Subscriber cam_subscriber = n.subscribe("/ariac/logical_camera", 10, cam_callback);
+  ros::Subscriber joint_subscriber = n.subscribe("/ariac/joint_states", 10, joint_callback);
   ros::ServiceClient begin_client = n.serviceClient<std_srvs::Trigger>("/ariac/start_competition");
   ros::ServiceClient material_client = n.serviceClient<osrf_gear::GetMaterialLocations>("/ariac/material_locations");  
   ros::Rate loop_rate(10);
@@ -53,10 +58,7 @@ int main(int argc, char **argv)
   // Instantiate a listener that listens to the tf and tf_static topics and to update
   // the buffer.
   tf2_ros::TransformListener tfListener(tfBuffer);
-  // Instantiating a move group for MoveIt for creating motion plans.
-  moveit::planning_interface::MoveGroupInterface move_group("manipulator");
-  // Instantiate and create a plan.
-  moveit::planning_interface::MoveGroupInterface::Plan the_plan;
+  
   // main loop
   while (ros::ok()){
   if (order_vector.size() > 0) {
@@ -97,22 +99,8 @@ int main(int argc, char **argv)
 	goal_pose.pose.orientation.y = 0.707;
 	goal_pose.pose.orientation.z = 0.0;
 	// Set the desired pose for the arm in the arm controller.
-	move_group.setPoseTarget(goal_pose);
-	bool success = (move_group.plan(the_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+	
 
-        ROS_INFO("plan is %s", success ? "" : "FAILED");
-	if (success) {
-          // Execute the plan.
-          ROS_INFO("plan executing");
-          // Execute the plan.
-          success = (move_group.execute(the_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-          ROS_INFO("The plan is %s", success ? "SUCCEEDED" : "FAILED");
-
-          ros::Duration(3).sleep();
-	  // so that we dont have to shutdown from terminal
-          if (success)
-            ros::shutdown();
-        }
 	}
     }
     loop_rate.sleep();

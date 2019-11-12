@@ -11,13 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   osrf_gear
   roscpp
+  ur_kinematics
   std_msgs
-  ur10_moveit_config
-  moveit_core
-  moveit_ros_move_group
-  moveit_ros_planning_interface
-  moveit_kinematics
-  moveit_ros_planning 
   pluginlib 
   tf_conversions
 )
@@ -161,6 +156,7 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 # )
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
+   ur10_kin
 )
 #############
 ## Install ##
